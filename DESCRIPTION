@@ -1,0 +1,13 @@
+Package: i2b2ExportData
+Version: 0.1
+Date: 2016-06-16
+Title: Exportation de données
+Author: Kan YAO, Nicolas Paris
+Description: Permet de télécharger des donnees depuis le requêteur i2b2
+Maintainer: Kan YAO <kan-yao@outlook.com>
+License: GPL (>= 2)
+Depends:
+    R (>= 3.0.1)
+Encoding: UTF-8
+LazyData: TRUE
+RoxygenNote: 5.0.1
