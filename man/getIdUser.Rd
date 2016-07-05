@@ -2,12 +2,17 @@
 % Please edit documentation in R/functions.R
 \name{getIdUser}
 \alias{getIdUser}
-\title{Fonction qui retourne le user_id}
+\title{getIdUser}
 \usage{
 getIdUser(conn, idSession)
 }
+\arguments{
+\item{conn}{Informations de connexion a la base de donnees}
+
+\item{idProject}{Identifiant du projet}
+}
 \value{
-user_id
+user_id Identifiant de l'utilisateur
 }
 \description{
 Fonction qui retourne le user_id

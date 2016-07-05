@@ -6,6 +6,6 @@
 \alias{i2b2ExportData-package}
 \title{i2b2ExportData}
 \description{
-Dans ce package, vous trouverez des fonctions de connexion a la base de donnees, de requetage et de restitution de resultats de requete
+Dans ce package, vous trouverez des fonctions pour l'export des données des requêtes
 }
 

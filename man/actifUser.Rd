@@ -7,7 +7,7 @@
 actifUser(conn, idSession)
 }
 \arguments{
-\item{idSession}{identifiant de la session de l'utilisateur}
+\item{idSession}{Identifiant de la session de l'utilisateur}
 }
 \value{
 True si l'utilisateur est actif et False sinon

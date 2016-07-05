@@ -2,15 +2,17 @@
 % Please edit documentation in R/functions.R
 \name{getIdQuery}
 \alias{getIdQuery}
-\title{Fonction qui retourne le numero de la requete faite par l'utilisateur.}
+\title{getIdQuery}
 \usage{
 getIdQuery(conn, idResult)
 }
 \arguments{
+\item{idResult}{Numero du resultat}
+
 \item{con}{Informations de connexion a la base de donnees}
 }
 \value{
-idQuery
+idQuery Le numero de la requete
 }
 \description{
 Fonction qui retourne le numero de la requete faite par l'utilisateur.

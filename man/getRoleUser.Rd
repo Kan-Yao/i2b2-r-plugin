@@ -2,16 +2,19 @@
 % Please edit documentation in R/functions.R
 \name{getRoleUser}
 \alias{getRoleUser}
-\title{Verifie les droits de l'utilisateur}
+\title{getRoleUser}
 \usage{
 getRoleUser(conn, idProject, idSession)
 }
 \arguments{
-\item{idProject}{identifiant du projet}
+\item{conn}{Informations de connexion a la base de donnees}
 
-\item{idSession}{identifiant de la session de l'utilisateur}
+\item{idProject}{Identifiant du projet}
 
-\item{con}{Informations de connexion a la base de donnees}
+\item{idSession}{Identifiant de la session de l'utilisateur}
+}
+\value{
+le droit de l'utilisateur en terme de visualisation de donnees
 }
 \description{
 Verifie les droits de l'utilisateur

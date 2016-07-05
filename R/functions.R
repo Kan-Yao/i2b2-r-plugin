@@ -1,6 +1,6 @@
 #' i2b2ExportData
 #' 
-#' Dans ce package, vous trouverez des fonctions de connexion a la base de donnees, de requetage et de restitution de resultats de requete
+#' Dans ce package, vous trouverez des fonctions pour l'export des données des requêtes 
 #' 
 #' @name i2b2ExportData
 #' @docType package
@@ -14,22 +14,6 @@ NULL
 #' Elle fait appel à la fonction dbConnect du package DBI.
 #' 
 #' @param connexionInfo datatable contenant tous les informations de connexion
-#' @export
-#' 
-
-
-#'
-#'
-#'
-getValueFromConfFile <- function(file, pattern){
-  gsub(paste0(pattern,"="),"",grep(paste0("^",pattern,"="), scan(file,what="",quiet=T),value=T))
-}
-
-
-#' Fonction de connexion a la base de donnees
-#' 
-#' @param connexionInfo datatable contenant tous les informations de connexion
-#' @export
 #' 
 dbConnexion <- function(connexionFile){
   con <- dbConnect(RPostgres::Postgres(), 
@@ -42,7 +26,8 @@ dbConnexion <- function(connexionFile){
 }
 
 
-
+#' dbDisconnection
+#' 
 #' Fonction de deconnexion a la base de donnees
 #'
 #' @param connexion en cours
@@ -52,9 +37,24 @@ dbDisconnection <- function(conn){
 }
 
 
-#' 
+#' getValueFromConfFile
 #'
+#' Fonction pour la lecture de fichier de connexion
 #' 
+#' @param file le chemin du fichier a lire
+#' @param pattern le champ a lire
+#' 
+getValueFromConfFile <- function(file, pattern){
+  gsub(paste0(pattern,"="),"",grep(paste0("^",pattern,"="), scan(file,what="",quiet=T),value=T))
+}
+
+
+
+#' makePreparedQuery
+#'
+#' Fonction pour les requetes preparees
+#' 
+#' @param conn informations de connexion
 #' 
 makePreparedQuery <- function(conn) {
   function(statement, ...) {
@@ -80,10 +80,9 @@ makePreparedQuery <- function(conn) {
 #'
 #'Verifie si l'identifiant du projet est valide.
 #'
-#'@param conn information de connexion
+#'@param conn Information de connexion
 #'@param idProjet L'idProjet a verifier
 #'@return True si l'idProjet existe
-#'@export
 #'
 verifIdProject <- function(conn,idProject){
   out <- tryCatch({
@@ -113,10 +112,9 @@ verifIdProject <- function(conn,idProject){
 #'
 #'Verifie si l'identifiant du projet est valide.
 #'
-#'@param conn information de connexion
+#'@param conn Information de connexion
 #'@param idSession L'idSession a verifier
 #'@return True si l'idSession existe
-#'@export
 #'
 verifIdSession <- function(conn,idSession){
   out <- tryCatch({
@@ -147,10 +145,9 @@ verifIdSession <- function(conn,idSession){
 #'
 #'Verifie si l'identifiant du projet est valide.
 #'
-#'@param conn information de connexion
+#'@param conn Information de connexion
 #'@param idResult L'idResult a verifier
 #'@return True si l'idResult existe
-#'@export
 #'
 verifIdResult <- function(conn,idResult){
   out <- tryCatch({
@@ -181,11 +178,9 @@ verifIdResult <- function(conn,idResult){
 #' Permet de recuperer la date de la fin de session de l'utilisateur courant.
 #' Elle fait appel aux differentes fonctions de verification : verifIdSession(...), verifIdProject(...), verifIdResult(...)
 #' 
-#' 
-#' @param idProject identifiant du projet 
-#' @param idSession identifiant de la session de l'utilisateur
+#' @param idProject Identifiant du projet 
+#' @param idSession Identifiant de la session de l'utilisateur
 #' @return renvoie la date de la fin de session de l'utilisateur   
-#' @export                                                               
 #' 
 getEndSessionDate <- function(conn, idProject, idSession,idResult){
   if(verifQueryOwner(conn, idSession, idProject, idResult) == TRUE){
@@ -229,7 +224,6 @@ getEndSessionDate <- function(conn, idProject, idSession,idResult){
 #' @param idResult Numero du resultat
 #' @param exportTable Numero de la table a interroger
 #' @return le nom de la table a interroger 
-#' @export
 #' 
 nameQuizTable <- function(conn,idResult, exportTable){
   if(verifIdResult(conn,idResult) == TRUE){
@@ -260,10 +254,9 @@ nameQuizTable <- function(conn,idResult, exportTable){
 #' Verifie que la session de l'utilisateur est bien active.
 #' Elle fait appel a la fonction getEndSessionDate(...) pour la comparaison avec la date courante.
 #' 
-#' @param idProject identifiant du projet 
-#' @param idSession identifiant de la session de l'utilisateur
+#' @param idProject Identifiant du projet 
+#' @param idSession Identifiant de la session de l'utilisateur
 #' @return TRUE if session active ou FALSE si session inactive
-#' @export
 #' 
 activeSession <- function(conn,idProject, idSession,idResult){
   dat <- getEndSessionDate(conn,idProject, idSession,idResult)
@@ -288,9 +281,8 @@ activeSession <- function(conn,idProject, idSession,idResult){
 #' Permet de verifier que l'utilisateur est bien actif et donc autorise a exporter des donnees de la base.
 #' Elle fait appel a la fonction verifIdSession(...), et verifie dans la table des usager, si l'utilisateur est actif.
 #' 
-#' @param idSession identifiant de la session de l'utilisateur 
+#' @param idSession Identifiant de la session de l'utilisateur 
 #' @return True si l'utilisateur est actif et False sinon     
-#' @export  
 #'                                            
 actifUser <- function(conn, idSession){
   if(verifIdSession(conn,idSession)== TRUE){
@@ -324,11 +316,10 @@ actifUser <- function(conn, idSession){
 #' Cette fonction permet de verifier que l'utilisateur courant est bien l'auteur de la requete.
 #' Avant cette verification, cette fonction fait appel aux differentes fonctions de verification : verifIdSession(...), verifIdProject(...). verifIdResult(...)
 #' 
-#' @param idSession identifiant de la session de l'utilisateur                                                                    
-#' @param idProject identifiant du projet
+#' @param idSession Identifiant de la session de l'utilisateur                                                                    
+#' @param idProject Identifiant du projet
 #' @param idResult Numéro du résultat
 #' @return True si l'utilisateur est le proprietaire de la requete
-#' @export
 #' 
 verifQueryOwner <- function(conn, idSession, idProject, idResult){
   if(verifIdSession(conn,idSession)== TRUE){
@@ -366,10 +357,9 @@ verifQueryOwner <- function(conn, idSession, idProject, idResult){
 #' De cette autorisation dependra la liste des colonnes a afficher au moment de l'export des donnees.
 #' 
 #' 
-#' @param idProject identifiant du projet
-#' @param idSession identifiant de la session de l'utilisateur  
+#' @param idProject Identifiant du projet
+#' @param idSession Identifiant de la session de l'utilisateur  
 #' @return 0 lorsque l'utilisateur n'est pas autorisé a visualiser l'ensemble des champs et 1 sinon.   
-#' @export
 #' 
 checkRole <- function(conn,idProject,idSession){
   if(verifIdSession(conn,idSession)== TRUE){
@@ -410,7 +400,6 @@ checkRole <- function(conn,idProject,idSession){
 #' @param idSession identifiant de la session de l'utilisateur
 #' @param colonneVisite Liste des champs a afficher
 #' @return La liste des champs a afficher
-#' @export
 #' 
 buildColonneVisite <- function(con,idProject,idSession,colonneVisite){
   role <- strtoi(checkRole(con,idProject,idSession),base=0L)
@@ -424,11 +413,10 @@ buildColonneVisite <- function(con,idProject,idSession,colonneVisite){
 #'
 #' Fonction qui construit les colonnes a afficher lors de l'export des faits   
 #'     
-#' @param idProject identifiant du projet
-#' @param idSession identifiant de la session de l'utilisateur
+#' @param idProject Identifiant du projet
+#' @param idSession Identifiant de la session de l'utilisateur
 #' @param colonneFait Liste des champs a afficher
 #' @return La liste des champs a afficher
-#' @export      
 #'                                                               
 buildColonneFait <- function(con,idProject,idSession,colonneFait){
   role <- strtoi(checkRole(con,idProject,idSession),base=0L)
@@ -442,8 +430,8 @@ buildColonneFait <- function(con,idProject,idSession,colonneFait){
 #' 
 #' Fonction qui construit les colonnes a afficher lors de l'export des patients 
 #' 
-#' @param idProject identifiant du projet
-#' @param idSession identifiant de la session de l'utilisateur
+#' @param idProject Identifiant du projet
+#' @param idSession Identifiant de la session de l'utilisateur
 #' @param colonnePatient Liste des champs a afficher
 #' @return La liste des champs a afficher 
 #' @export
@@ -456,13 +444,13 @@ buildColonnePatient <- function(con,idProject,idSession,colonnePatient){
 }
 
 
-
+#' getIdQuery
+#' 
 #' Fonction qui retourne le numero de la requete faite par l'utilisateur.
 #' 
 #' @param con Informations de connexion a la base de donnees
-#' @param idResult
-#' @return idQuery
-#' @export
+#' @param idResult Numero du resultat
+#' @return idQuery Le numero de la requete
 #' 
 getIdQuery <- function(conn,idResult){
   if(verifIdResult(conn,idResult) == TRUE){
@@ -486,12 +474,13 @@ getIdQuery <- function(conn,idResult){
 }
 
 
+#' getIdUser
+#' 
 #' Fonction qui retourne le user_id
 #' 
-#' @param con
-#' @param idProject
-#' @return user_id
-#' @export
+#' @param conn Informations de connexion a la base de donnees 
+#' @param idProject Identifiant du projet
+#' @return user_id Identifiant de l'utilisateur
 #' 
 getIdUser <- function(conn, idSession){
   if(verifIdSession(conn,idSession) == TRUE){
@@ -515,11 +504,14 @@ getIdUser <- function(conn, idSession){
 
 
 
+#' getRoleUser
+#' 
 #' Verifie les droits de l'utilisateur
 #' 
-#' @param con Informations de connexion a la base de donnees
-#' @param idProject identifiant du projet
-#' @param idSession identifiant de la session de l'utilisateur  
+#' @param conn Informations de connexion a la base de donnees
+#' @param idProject Identifiant du projet
+#' @param idSession Identifiant de la session de l'utilisateur
+#' @return le droit de l'utilisateur en terme de visualisation de donnees  
 #' 
 getRoleUser <- function(conn,idProject,idSession){
   role <- strtoi(checkRole(conn,idProject,idSession),base=0L)
@@ -532,6 +524,8 @@ getRoleUser <- function(conn,idProject,idSession){
 
 
 
+#' getAction
+#' 
 #' Retourne le type d'application utilise
 #' 
 #' 
@@ -540,17 +534,16 @@ getAction <- function(){
 }
 
 
-
-
 #'factCollection
 #'
 #' Cette fonction interroge la base de données et retourne la liste des faits realisee durant le sejour du patient.
 #'
-#'@param idResult Numero du resultat
-#'@param idProject Ndentifiant du projet
-#'@param idSession Identifiant de la session
-#'@return La liste  des sejours correspondant
-#'@export
+#' @param idResult Numero du resultat
+#' @param idProject Identifiant du projet
+#' @param idSession Identifiant de la session
+#' @param connexionFile le chemin du fichier de connexion
+#' @return La liste  des sejours correspondant
+#' @export
 #'
 factCollection <- function(idResult, idProject, idSession,connexionFile){
   #dbConnexion
@@ -610,11 +603,12 @@ factCollection <- function(idResult, idProject, idSession,connexionFile){
 #' 
 #' A partir du numero du resultat de la requete d'i2b2, cette fonction renvoie la liste des visites correspondant.                           
 #'                                                                        
-#'@param idResult Numero du resultat
-#'@param idProject Ndentifiant du projet
-#'@param idSession Identifiant de la session
-#'@return La liste  des sejours correspondant
-#'@export
+#' @param idResult Numero du resultat
+#' @param idProject Identifiant du projet
+#' @param idSession Identifiant de la session
+#' @param connexionFile le chemin du fichier de connexion
+#' @return La liste  des sejours correspondant
+#' @export
 #'
 visitCollection <- function(idResult, idProject, idSession,connexionFile){
   #dbConnexion
@@ -675,11 +669,12 @@ visitCollection <- function(idResult, idProject, idSession,connexionFile){
 #' 
 #' A partir du numero du resultat de la requete d'i2b2, cette fonction renvoie la liste des patients correspondant.    
 #'
-#'@param idResult Numero du resultat
-#'@param idProject Identifiant du projet
-#'@param idSession Identifiant de la session
-#'@return La liste  des sejours correspondant
-#'@export
+#' @param idResult Numero du resultat
+#' @param idProject Identifiant du projet
+#' @param idSession Identifiant de la session
+#' @param connexionFile le chemin du fichier de connexion
+#' @return La liste des sejours correspondant
+#' @export
 #'
 patientCollection <- function(idResult, idProject, idSession,connexionFile){
   #dbConnexion
@@ -734,10 +729,19 @@ patientCollection <- function(idResult, idProject, idSession,connexionFile){
 }
 
 
-# Creation des datatables en fonction du type de donnees a exporter
 
 #' getDataTable
-#'
+#' 
+#' Creation des datatables en fonction du type de donnees a exporter et insertion dans la table de tracage des informations concernant le telechargement.
+#' Cette fonction cree des fichiers selon chaque type de donnees a exporter.
+#' 
+#' @param idResult Numero du resultat
+#' @param idProject Identifiant du projet
+#' @param idSession IdSession Identifiant de la session
+#' @param researchGoal But de l'etude
+#' @param exportData Le type de donnees a exporter (1: Patients, 2: patients et faits, 3: patients, faits, et visites)
+#' @param connexionFile le chemin du fichier de connexion
+#' 
 #' @export
 #'
 getDataTable <- function(idResult,idProject,idSession,researchGoal,exportData,connexionFile){

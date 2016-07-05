@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions.R
 \name{getAction}
 \alias{getAction}
-\title{Retourne le type d'application utilise}
+\title{getAction}
 \usage{
 getAction()
 }

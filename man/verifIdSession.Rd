@@ -7,7 +7,7 @@
 verifIdSession(conn, idSession)
 }
 \arguments{
-\item{conn}{information de connexion}
+\item{conn}{Information de connexion}
 
 \item{idSession}{L'idSession a verifier}
 }

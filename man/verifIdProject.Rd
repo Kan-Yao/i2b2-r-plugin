@@ -7,7 +7,7 @@
 verifIdProject(conn, idProject)
 }
 \arguments{
-\item{conn}{information de connexion}
+\item{conn}{Information de connexion}
 
 \item{idProjet}{L'idProjet a verifier}
 }

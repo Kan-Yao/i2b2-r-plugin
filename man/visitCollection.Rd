@@ -9,9 +9,11 @@ visitCollection(idResult, idProject, idSession, connexionFile)
 \arguments{
 \item{idResult}{Numero du resultat}
 
-\item{idProject}{Ndentifiant du projet}
+\item{idProject}{Identifiant du projet}
 
 \item{idSession}{Identifiant de la session}
+
+\item{connexionFile}{le chemin du fichier de connexion}
 }
 \value{
 La liste  des sejours correspondant

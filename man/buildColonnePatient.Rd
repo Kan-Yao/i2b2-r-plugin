@@ -7,9 +7,9 @@
 buildColonnePatient(con, idProject, idSession, colonnePatient)
 }
 \arguments{
-\item{idProject}{identifiant du projet}
+\item{idProject}{Identifiant du projet}
 
-\item{idSession}{identifiant de la session de l'utilisateur}
+\item{idSession}{Identifiant de la session de l'utilisateur}
 
 \item{colonnePatient}{Liste des champs a afficher}
 }

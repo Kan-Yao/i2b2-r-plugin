@@ -12,9 +12,11 @@ patientCollection(idResult, idProject, idSession, connexionFile)
 \item{idProject}{Identifiant du projet}
 
 \item{idSession}{Identifiant de la session}
+
+\item{connexionFile}{le chemin du fichier de connexion}
 }
 \value{
-La liste  des sejours correspondant
+La liste des sejours correspondant
 }
 \description{
 A partir du numero du resultat de la requete d'i2b2, cette fonction renvoie la liste des patients correspondant.

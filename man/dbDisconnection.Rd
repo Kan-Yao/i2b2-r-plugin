@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions.R
 \name{dbDisconnection}
 \alias{dbDisconnection}
-\title{Fonction de deconnexion a la base de donnees}
+\title{dbDisconnection}
 \usage{
 dbDisconnection(conn)
 }

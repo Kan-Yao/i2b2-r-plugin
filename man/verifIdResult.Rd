@@ -7,7 +7,7 @@
 verifIdResult(conn, idResult)
 }
 \arguments{
-\item{conn}{information de connexion}
+\item{conn}{Information de connexion}
 
 \item{idResult}{L'idResult a verifier}
 }

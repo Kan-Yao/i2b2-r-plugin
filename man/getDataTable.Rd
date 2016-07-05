@@ -7,7 +7,21 @@
 getDataTable(idResult, idProject, idSession, researchGoal, exportData,
   connexionFile)
 }
+\arguments{
+\item{idResult}{Numero du resultat}
+
+\item{idProject}{Identifiant du projet}
+
+\item{idSession}{IdSession Identifiant de la session}
+
+\item{researchGoal}{But de l'etude}
+
+\item{exportData}{Le type de donnees a exporter (1: Patients, 2: patients et faits, 3: patients, faits, et visites)}
+
+\item{connexionFile}{le chemin du fichier de connexion}
+}
 \description{
-getDataTable
+Creation des datatables en fonction du type de donnees a exporter et insertion dans la table de tracage des informations concernant le telechargement.
+Cette fonction cree des fichiers selon chaque type de donnees a exporter.
 }
 

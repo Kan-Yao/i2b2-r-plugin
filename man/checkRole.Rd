@@ -7,9 +7,9 @@
 checkRole(conn, idProject, idSession)
 }
 \arguments{
-\item{idProject}{identifiant du projet}
+\item{idProject}{Identifiant du projet}
 
-\item{idSession}{identifiant de la session de l'utilisateur}
+\item{idSession}{Identifiant de la session de l'utilisateur}
 }
 \value{
 0 lorsque l'utilisateur n'est pas autorisé a visualiser l'ensemble des champs et 1 sinon.

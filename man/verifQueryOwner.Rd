@@ -7,9 +7,9 @@
 verifQueryOwner(conn, idSession, idProject, idResult)
 }
 \arguments{
-\item{idSession}{identifiant de la session de l'utilisateur}
+\item{idSession}{Identifiant de la session de l'utilisateur}
 
-\item{idProject}{identifiant du projet}
+\item{idProject}{Identifiant du projet}
 
 \item{idResult}{Numéro du résultat}
 }

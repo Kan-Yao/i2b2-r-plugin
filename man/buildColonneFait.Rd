@@ -7,9 +7,9 @@
 buildColonneFait(con, idProject, idSession, colonneFait)
 }
 \arguments{
-\item{idProject}{identifiant du projet}
+\item{idProject}{Identifiant du projet}
 
-\item{idSession}{identifiant de la session de l'utilisateur}
+\item{idSession}{Identifiant de la session de l'utilisateur}
 
 \item{colonneFait}{Liste des champs a afficher}
 }
