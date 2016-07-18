@@ -28,9 +28,9 @@ dbConnexion <- function(directoryConfig){
 
 #' dbDisconnection
 #' 
-#' Fonction de deconnexion a la base de donnees
+#' Disconnect function to the database
 #'
-#' @param connexion en cours
+#' @param conn connection information
 #'
 dbDisconnection <- function(conn){
   RPostgres::dbDisconnect(conn)
@@ -39,10 +39,10 @@ dbDisconnection <- function(conn){
 
 #' getValueFromConfFile
 #'
-#' Fonction pour la lecture de fichier de connexion
+#' Reading the connection file 
 #' 
-#' @param file le chemin du fichier a lire
-#' @param pattern le champ a lire
+#' @param The read file path
+#' @param pattern The field to read
 #' 
 getValueFromConfFile <- function(file, pattern){
   gsub(paste0(pattern,"="),"",grep(paste0("^",pattern,"="), scan(file,what="",quiet=T),value=T))
@@ -54,7 +54,7 @@ getValueFromConfFile <- function(file, pattern){
 #'
 #' Function for prepared statements
 #' 
-#' @param conn Information de connection
+#' @param conn connection information
 #' 
 makePreparedQuery <- function(conn) {
   function(statement, ...) {
@@ -82,7 +82,7 @@ makePreparedQuery <- function(conn) {
 #'
 #' Checks if project ID is valid
 #'
-#' @param conn Information de connection
+#' @param conn connection information
 #' @param idProjet L'idProjet a verifier
 #'
 #' @return True if idProjet exists
