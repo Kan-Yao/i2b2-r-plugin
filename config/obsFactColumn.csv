@@ -1,0 +1,11 @@
+Column;Alias;Profile
+encounter_num;ID_Fait;USER
+patient_num;ID_Patient;USER
+provider_id;Unite_Executrice_Fait;USER
+concept_cd;Concept;USER
+start_date;Debut_Fait;USER
+end_date;Fin_Fait;USER
+valtype_cd;Type_Fait;USER
+nval_num;Valeur_Fait;USER
+units_cd;Unite_Fait;USER
+observation_blob;Observation_Fait;DEID

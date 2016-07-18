@@ -1,0 +1,9 @@
+Column;Alias;Profile
+encounter_num;Id_Visite;USER
+patient_num;ID_Patient;USER
+visit_blob;NDA;DEID
+vital_status_visit_cd;Statut_Vital_Visite;USER
+start_date;Debut_Visite;USER
+end_date;Fin_Visite;USER
+length_of_stay;Duree_Visite;USER
+age_visit_in_years_num;Age_Visite;USER

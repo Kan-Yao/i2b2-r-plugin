@@ -1,0 +1,9 @@
+Column;Alias;Profile
+patient_num;Id_Patient;USER
+patient_blob;IPP;DEID
+sex_cd;Genre;USER
+age_in_years_num;Age;USER
+birth_date;Date_Naissance;DEID
+death_date;Date_Deces;DEID
+vital_status_cd;Statut_Vital;USER
+zip_cd;Code_Postal;USER

@@ -4,24 +4,27 @@
 #' 
 #' @name i2b2ExportData
 #' @docType package
-NULL
 
 #' dbConnexion
 #' 
 #' Fonction de connexion à la base de donnees.
 #' Cette fonction se connecte à l'aide du driver de la base de donnees a interroger, du nom de la base, de l'adresse du hote, du numero de port
 #' de l'identifiant utilisateur et du mot de passe.
-#' Elle fait appel à la fonction dbConnect du package DBI.
+#' Elle fact appel à la fonction dbConnect du package DBI.
 #' 
 #' @param connexionInfo datatable contenant tous les informations de connexion
 #' 
-dbConnexion <- function(connexionFile){
-  con <- dbConnect(RPostgres::Postgres(), 
-                   dbname = getValueFromConfFile(connexionFile,"dbname"),
-                   host = getValueFromConfFile(connexionFile,"host"),
-                   port = getValueFromConfFile(connexionFile,"port"),
-                   user = getValueFromConfFile(connexionFile,"user"),
-                   password = getValueFromConfFile(connexionFile,"password"))
+
+NULL_VALUE <- "'[protected]'"
+
+dbConnexion <- function(directoryConfig){
+  connectionFile <- file.path(directoryConfig, "connectionFile.cfg")
+  con <- RPostgres::dbConnect(RPostgres::Postgres(), 
+                   dbname = getValueFromConfFile(connectionFile,"dbname"),
+                   host = getValueFromConfFile(connectionFile,"host"),
+                   port = getValueFromConfFile(connectionFile,"port"),
+                   user = getValueFromConfFile(connectionFile,"user"),
+                   password = getValueFromConfFile(connectionFile,"password"))
   
 }
 
@@ -33,7 +36,7 @@ dbConnexion <- function(connexionFile){
 #' @param connexion en cours
 #'
 dbDisconnection <- function(conn){
-  dbDisconnect(conn)
+  RPostgres::dbDisconnect(conn)
 }
 
 
@@ -58,20 +61,22 @@ getValueFromConfFile <- function(file, pattern){
 #' 
 makePreparedQuery <- function(conn) {
   function(statement, ...) {
+      options(warn=-1)
     params = list(...)
     
-    rs <- dbSendQuery(conn, statement)
-    on.exit(dbClearResult(rs))
+    rs <- RPostgres::dbSendQuery(conn, statement)
+    on.exit(RPostgres::dbClearResult(rs))
     
     if (length(params) > 0) {
-      dbBind(rs, params)
+      RPostgres::dbBind(rs, params)
     }
-    
-    df <- dbFetch(rs, n = -1, ...)
-    if (!dbHasCompleted(rs)) {
+    df <- RPostgres::dbFetch(rs, n = -1, ...)
+    if (!RPostgres::dbHasCompleted(rs)) {
+    RPostgres::dbClearResult(rs)
       warning("Pending rows", call. = FALSE)
     }
     
+    options(warn=0)
     df
   }
 }
@@ -100,7 +105,7 @@ verifIdProject <- function(conn,idProject){
     }
   }, error = function(err){
     print(err)
-    q()
+    
   },finally = {
     r <- strtoi(verifId(query,idProject),base=0L) == 1
   }
@@ -133,7 +138,7 @@ verifIdSession <- function(conn,idSession){
     }
   }, error = function(err){
     print(err)
-    q()
+    
   },finally = {
     return(strtoi(verifSession(query,idSession),base=0L) == 1)
   }
@@ -165,7 +170,7 @@ verifIdResult <- function(conn,idResult){
     }
   }, error = function(err){
     print(err)
-    q()
+    
   },finally = {
     return(strtoi(verifResult(query,idResult),base=0L) == 1)
   }
@@ -176,14 +181,14 @@ verifIdResult <- function(conn,idResult){
 #' getEndSessionDate
 #' 
 #' Permet de recuperer la date de la fin de session de l'utilisateur courant.
-#' Elle fait appel aux differentes fonctions de verification : verifIdSession(...), verifIdProject(...), verifIdResult(...)
+#' Elle fact appel aux differentes fonctions de verification : verifIdSession(...), verifIdProject(...), verifIdResult(...)
 #' 
 #' @param idProject Identifiant du projet 
 #' @param idSession Identifiant de la session de l'utilisateur
 #' @return renvoie la date de la fin de session de l'utilisateur   
 #' 
-getEndSessionDate <- function(conn, idProject, idSession,idResult){
-  if(verifQueryOwner(conn, idSession, idProject, idResult) == TRUE){
+getEndSessionDate <- function(conn, idProject, idSession,idResult,idUser){
+  if(verifQueryOwner(conn, idSession, idProject, idResult, idUser) == TRUE){
     if(verifIdProject(conn,idProject) == TRUE){
       if(verifIdSession(conn,idSession)== TRUE){
         out <- tryCatch({
@@ -202,7 +207,7 @@ getEndSessionDate <- function(conn, idProject, idSession,idResult){
           
         }, error = function(err){
           print(err)
-          q()
+          
         },finally = {
         }
         )
@@ -210,22 +215,22 @@ getEndSessionDate <- function(conn, idProject, idSession,idResult){
     }
   }else{
     print("Pas autoriser a executer cette requete !")
-    q()
+    
   }
 }
 
 
-#' nameQuizTable
+#' getSetTableFromIdResult
 #' 
 #' cette fonction permet de recuperer le nom de la table a interroger, pour l'extraction des donnees.
-#' Elle fait appel a la fonction verifIdResult(...).
+#' Elle fact appel a la fonction verifIdResult(...).
 #' 
 #' @param conn Information de connexion
 #' @param idResult Numero du resultat
 #' @param exportTable Numero de la table a interroger
 #' @return le nom de la table a interroger 
 #' 
-nameQuizTable <- function(conn,idResult, exportTable){
+getSetTableFromIdResult <- function(conn, idResult, exportTable){
   if(verifIdResult(conn,idResult) == TRUE){
     out <- tryCatch({
       query <- "SELECT x.result_type_id typeResult
@@ -235,12 +240,13 @@ nameQuizTable <- function(conn,idResult, exportTable){
       
       quizTable <- makePreparedQuery(conn)
       quizTable(query,idResult)
-      
-      return(exportTable[exportTable$V1 %in% quizTable(query,idResult),]$V2)
+      table <- exportTable[exportTable$V1 %in% quizTable(query,idResult),]$V2
+      print(table)
+      return(table)
       
     },error = function(err){
       print(err)
-      q()
+      
     },finally = {
       
     }
@@ -252,23 +258,24 @@ nameQuizTable <- function(conn,idResult, exportTable){
 #' activeSession
 #' 
 #' Verifie que la session de l'utilisateur est bien active.
-#' Elle fait appel a la fonction getEndSessionDate(...) pour la comparaison avec la date courante.
+#' Elle fact appel a la fonction getEndSessionDate(...) pour la comparaison avec la date courante.
 #' 
 #' @param idProject Identifiant du projet 
 #' @param idSession Identifiant de la session de l'utilisateur
 #' @return TRUE if session active ou FALSE si session inactive
 #' 
-activeSession <- function(conn,idProject, idSession,idResult){
-  dat <- getEndSessionDate(conn,idProject, idSession,idResult)
+activeSession <- function(conn,idProject, idSession,idResult, idUser){
+  dat <- getEndSessionDate(conn,idProject, idSession,idResult, idUser)
   #curentDate <- format(Sys.time(), "%Y-%m-%d %H:%M:%S");
   curentDate <-'2015-09-29 13:15:58'
   endSession <- dat[1,"expired_date"]
   
   if(curentDate > endSession){
     print("session perdu")
-    q()
+    
     
   }else{
+      print("session active")
     return(TRUE)
   }
   
@@ -279,30 +286,32 @@ activeSession <- function(conn,idProject, idSession,idResult){
 #' actifUser
 #' 
 #' Permet de verifier que l'utilisateur est bien actif et donc autorise a exporter des donnees de la base.
-#' Elle fait appel a la fonction verifIdSession(...), et verifie dans la table des usager, si l'utilisateur est actif.
+#' Elle fact appel a la fonction verifIdSession(...), et verifie dans la table des usager, si l'utilisateur est actif.
 #' 
 #' @param idSession Identifiant de la session de l'utilisateur 
 #' @return True si l'utilisateur est actif et False sinon     
 #'                                            
-actifUser <- function(conn, idSession){
+actifUser <- function(conn, idSession, idUser){
   if(verifIdSession(conn,idSession)== TRUE){
     out <- tryCatch({
       query <-"SELECT DISTINCT x.status_cd 
       FROM i2b2pm.pm_user_data x, i2b2pm.pm_user_session y
-      WHERE y.session_id = ($1::varchar)"
+      WHERE y.session_id = ($1::varchar)
+      AND x.user_id = ($2::varchar)"
       
       userActif <- makePreparedQuery(conn)
       
-      if(identical(paste(userActif(query,idSession)),"A")){
+      if(identical(paste(userActif(query,idSession, idUser)),"A")){
+          print("user active")
         return(TRUE)
         
       }else{
         print("user pas actif")
-        q()
+        
       }
     },error = function(err){
       print(err)
-      q()
+      
     },finally = {
       
     }
@@ -314,14 +323,14 @@ actifUser <- function(conn, idSession){
 #' verifQueryOwner
 #' 
 #' Cette fonction permet de verifier que l'utilisateur courant est bien l'auteur de la requete.
-#' Avant cette verification, cette fonction fait appel aux differentes fonctions de verification : verifIdSession(...), verifIdProject(...). verifIdResult(...)
+#' Avant cette verification, cette fonction fact appel aux differentes fonctions de verification : verifIdSession(...), verifIdProject(...). verifIdResult(...)
 #' 
 #' @param idSession Identifiant de la session de l'utilisateur                                                                    
 #' @param idProject Identifiant du projet
 #' @param idResult Numéro du résultat
 #' @return True si l'utilisateur est le proprietaire de la requete
 #' 
-verifQueryOwner <- function(conn, idSession, idProject, idResult){
+verifQueryOwner <- function(conn, idSession, idProject, idResult, idUser){
   if(verifIdSession(conn,idSession)== TRUE){
     if(verifIdProject(conn,idProject) == TRUE){
       if(verifIdResult(conn,idResult) == TRUE){
@@ -332,14 +341,17 @@ verifQueryOwner <- function(conn, idSession, idProject, idResult){
           AND x.query_master_id = y.query_instance_id
           AND z.session_id = ($1::varchar)
           AND y.result_instance_id = ($2::numeric)
-          AND x.group_id = ($3::varchar)"
+          AND x.group_id = ($3::varchar)
+          AND x.user_id = ($4::varchar)"
           
           queryOwner <- makePreparedQuery(conn)
-          return(queryOwner(query,idSession,idResult,idProject)$count == 1)
+          res <- queryOwner(query,idSession,idResult,idProject,idUser)$count == 1
+          if(res){print("user owns set")}else{print("user don't owns set")}
+          return(res)
           
         },error = function(err){
           print(err)
-          q()
+          
         },finally = {
           
         }
@@ -351,7 +363,7 @@ verifQueryOwner <- function(conn, idSession, idProject, idResult){
 }
 
 
-#' checkRole
+#' getRole
 #' 
 #' Fonction qui determine l'autorisation dont jouit l'utilisateur.                  
 #' De cette autorisation dependra la liste des colonnes a afficher au moment de l'export des donnees.
@@ -361,28 +373,24 @@ verifQueryOwner <- function(conn, idSession, idProject, idResult){
 #' @param idSession Identifiant de la session de l'utilisateur  
 #' @return 0 lorsque l'utilisateur n'est pas autorisé a visualiser l'ensemble des champs et 1 sinon.   
 #' 
-checkRole <- function(conn,idProject,idSession){
-  if(verifIdSession(conn,idSession)== TRUE){
+getRole <- function(conn, idProject, idSession){
+  if(verifIdSession(conn,idSession) == TRUE){
     if(verifIdProject(conn,idProject) == TRUE){
       out <- tryCatch({
-        query <- "WITH tmp AS ( 
-        SELECT DISTINCT x.user_id, x.user_role_cd, project_id, y.session_id, y.expired_date 
+        query <- "
+        SELECT x.user_role_cd AS user_role_cd
         FROM i2b2pm.pm_project_user_roles x, i2b2pm.pm_user_session y
         WHERE x.user_id=y.user_id 
         and y.session_id=($1::varchar)
         and project_id=($2::varchar)
-      )
-        SELECT count(*) FROM tmp 
-        WHERE tmp.user_role_cd LIKE \'DATA_DEID' OR
-        tmp.user_role_cd LIKE \'DATA_PROT' 
-        LIMIT 1"
+        "
         
         role <- makePreparedQuery(conn)
         
-        return(role(query,idSession,idProject))
+        return(role(query,idSession,idProject)$user_role_cd)
       },error = function(err){
         print(err)
-        q()
+        
       },finally = {
         
       }
@@ -392,41 +400,37 @@ checkRole <- function(conn,idProject,idSession){
 }
 
 
-#' buildColonneVisite
+#' buildColumnEncounter
 #'
-#' Fonction qui construit les colonnes a afficher lors de l'export de la liste des visites des patients
+#' Fonction qui construit les colonnes a afficher lors de l'export de la liste des encounters des patients
 #'                                                                        
 #' @param idProject identifiant du projet
 #' @param idSession identifiant de la session de l'utilisateur
-#' @param colonneVisite Liste des champs a afficher
+#' @param colonneEncounter Liste des champs a afficher
 #' @return La liste des champs a afficher
 #' 
-buildColonneVisite <- function(con,idProject,idSession,colonneVisite){
-  role <- strtoi(checkRole(con,idProject,idSession),base=0L)
-  
-  paste0(sprintf("%s AS %s",ifelse(role>=colonneVisite$Anon,paste0("v.",colonneVisite$Colonne),"'[protected]'"),colonneVisite$Alias),collapse=", ")
-  
+buildColumnEncounter <- function(con,idProject,idSession,colonneEncounter){
+  role <- getRole(con,idProject,idSession)
+  paste0(sprintf("%s AS %s",ifelse(sapply(colonneEncounter$Profile,function(x){any(role%in%x)}),paste0("v.",colonneEncounter$Column),NULL_VALUE),colonneEncounter$Alias),collapse=", ")
 }
 
 
-#' buildColonneFait
+#' buildColumnFact
 #'
-#' Fonction qui construit les colonnes a afficher lors de l'export des faits   
+#' Fonction qui construit les colonnes a afficher lors de l'export des facts   
 #'     
 #' @param idProject Identifiant du projet
 #' @param idSession Identifiant de la session de l'utilisateur
-#' @param colonneFait Liste des champs a afficher
+#' @param colonneFact Liste des champs a afficher
 #' @return La liste des champs a afficher
 #'                                                               
-buildColonneFait <- function(con,idProject,idSession,colonneFait){
-  role <- strtoi(checkRole(con,idProject,idSession),base=0L)
-  
-  paste0(sprintf("%s AS %s",ifelse(role>=colonneFait$Anon,paste0("f.",colonneFait$Colonne),"'[protected]'"),colonneFait$Alias),collapse=", ")
-  
+buildColumnFact <- function(con,idProject,idSession,colonneFact){
+  role <- getRole(con,idProject,idSession)
+  paste0(sprintf("%s AS %s",ifelse(sapply(colonneFact$Profile,function(x){any(role%in%x)}),paste0("f.",colonneFact$Column),NULL_VALUE),colonneFact$Alias),collapse=", ")
 }
 
 
-#' buildColonnePatient
+#' buildColumnPatient
 #' 
 #' Fonction qui construit les colonnes a afficher lors de l'export des patients 
 #' 
@@ -434,19 +438,17 @@ buildColonneFait <- function(con,idProject,idSession,colonneFait){
 #' @param idSession Identifiant de la session de l'utilisateur
 #' @param colonnePatient Liste des champs a afficher
 #' @return La liste des champs a afficher 
-#' @export
 #' 
-buildColonnePatient <- function(con,idProject,idSession,colonnePatient){
-  role <- strtoi(checkRole(con,idProject,idSession),base=0L)
-  
-  paste0(sprintf("%s AS %s",ifelse(role>=colonnePatient$Anon,paste0("p.",colonnePatient$Colonne),"'[protected]'"),colonnePatient$Alias),collapse=", ")
-  
+#' 
+buildColumnPatient <- function(con,idProject,idSession,colonnePatient){
+  role <- getRole(con,idProject,idSession)
+  paste0(sprintf("%s AS %s",ifelse(sapply(colonnePatient$Profile,function(x){any(role%in%x)}),paste0("p.",colonnePatient$Column),NULL_VALUE),colonnePatient$Alias),collapse=", ")
 }
 
 
 #' getIdQuery
 #' 
-#' Fonction qui retourne le numero de la requete faite par l'utilisateur.
+#' Fonction qui retourne le numero de la requete facte par l'utilisateur.
 #' 
 #' @param con Informations de connexion a la base de donnees
 #' @param idResult Numero du resultat
@@ -464,7 +466,7 @@ getIdQuery <- function(conn,idResult){
       
     },error = function(err){
       print(err)
-      q()
+      
     },finally = {
       
     }
@@ -472,56 +474,6 @@ getIdQuery <- function(conn,idResult){
     
   }
 }
-
-
-#' getIdUser
-#' 
-#' Fonction qui retourne le user_id
-#' 
-#' @param conn Informations de connexion a la base de donnees 
-#' @param idProject Identifiant du projet
-#' @return user_id Identifiant de l'utilisateur
-#' 
-getIdUser <- function(conn, idSession){
-  if(verifIdSession(conn,idSession) == TRUE){
-    out <- tryCatch({
-      query <- "SELECT user_id 
-      FROM i2b2pm.pm_user_session x
-      WHERE x.session_id=($1::varchar)"
-      
-      idUser <- makePreparedQuery(conn)
-      return(paste(idUser(query,idSession)))
-      
-    },error = function(err){
-      print(err)
-      q()
-    },finally = {
-      
-    }
-    )
-  }
-}
-
-
-
-#' getRoleUser
-#' 
-#' Verifie les droits de l'utilisateur
-#' 
-#' @param conn Informations de connexion a la base de donnees
-#' @param idProject Identifiant du projet
-#' @param idSession Identifiant de la session de l'utilisateur
-#' @return le droit de l'utilisateur en terme de visualisation de donnees  
-#' 
-getRoleUser <- function(conn,idProject,idSession){
-  role <- strtoi(checkRole(conn,idProject,idSession),base=0L)
-  if(role > 0){
-    return("De-identified Data")
-  }else{
-    return("Limited Data Set")
-  }
-}
-
 
 
 #' getAction
@@ -533,133 +485,136 @@ getAction <- function(){
   return("Export")
 }
 
+#' getAction
+#' 
+#' Retourne le type d'application utilise
+#' 
+#' 
+getColumnFile <- function(directoryConfig,file){
+    read.csv2(file.path(directoryConfig,file), stringsAsFactors=FALSE)
+}
 
 #'factCollection
 #'
-#' Cette fonction interroge la base de données et retourne la liste des faits realisee durant le sejour du patient.
+#' Cette fonction interroge la base de données et retourne la liste des facts realisee durant le sejour du patient.
 #'
 #' @param idResult Numero du resultat
 #' @param idProject Identifiant du projet
 #' @param idSession Identifiant de la session
-#' @param connexionFile le chemin du fichier de connexion
+#' @param directoryConfig le chemin du fichier de connexion
 #' @return La liste  des sejours correspondant
-#' @export
+#' 
 #'
-factCollection <- function(idResult, idProject, idSession,connexionFile){
-  #dbConnexion
-  conn <- dbConnexion(connexionFile)
+factCollection <- function(idResult, idProject, idSession,directoryConfig, idUser){
   
-  if(activeSession(conn, idProject, idSession,idResult) == TRUE){
-    print('Session active !')
-    if(actifUser(conn, idSession) == TRUE){
-      print('User actif')
-      if(verifQueryOwner(conn, idSession, idProject, idResult) == TRUE){
-        if(identical(nameQuizTable(conn, idResult,exportTable),"qt_patient_enc_collection") == TRUE){
-          query <- sprintf("SELECT DISTINCT %s
+  if(activeSession(conn, idProject, idSession,idResult, idUser) == TRUE){
+    if(actifUser(conn, idSession, idUser) == TRUE){
+      if(verifQueryOwner(conn, idSession, idProject, idResult, idUser) == TRUE){
+          fact_cols <- buildColumnFact(conn,idProject,idSession,getColumnFile(directoryConfig,"obsFactColumn.csv"))
+          i2b2DataSchema <- getValueFromConfFile(file.path(directoryConfig,"connectionFile.cfg"),"i2b2DataSchema")
+          set_table <- getSetTableFromIdResult(conn, idResult, getColumnFile(directoryConfig,"exportTable.csv"))
+        if(identical(set_table,"qt_patient_set_collection") == TRUE){
+          query <- sprintf("SELECT  %s
+                           FROM %s.%s f, %s.%s c
+                           WHERE c.result_instance_id = ($1::numeric)
+                           AND f.patient_num = c.patient_num",
+                           fact_cols,
+                           i2b2DataSchema,
+                           "observation_fact",
+                           i2b2DataSchema,
+                           set_table)
+          fact <- makePreparedQuery(conn)
+          fact(query,idResult)
+          
+        }else if(identical(set_table,"qt_patient_enc_collection") == TRUE){
+          query <- sprintf("SELECT  %s
                            FROM %s.%s f, %s.%s c
                            WHERE c.result_instance_id = ($1::numeric)
                            AND f.patient_num = c.patient_num
                            AND f.encounter_num = c.encounter_num",
-                           buildColonneFait(conn,idProject,idSession,colonneFait),
-                           "i2b2data_multi_nomi",
+                           fact_cols,
+                           i2b2DataSchema, 
                            "observation_fact",
-                           "i2b2data_multi_nomi",
-                           nameQuizTable(conn, idResult, exportTable))
-          
-          fact <- makePreparedQuery(conn)
-          fact(query,idResult)
-          
-        }else if(identical(nameQuizTable(conn, idResult,exportTable),"qt_patient_set_collection") == TRUE){
-          query <- sprintf("SELECT DISTINCT %s
-                           FROM %s.%s f, %s.%s c
-                           WHERE c.result_instance_id = ($1::numeric)
-                           AND f.patient_num = c.patient_num",
-                           buildColonneFait(conn,idProject,idSession,colonneFait),
-                           "i2b2data_multi_nomi",
-                           "observation_fact",
-                           "i2b2data_multi_nomi",
-                           nameQuizTable(conn, idResult, exportTable))
-          
+                           i2b2DataSchema,
+                           set_table)
           fact <- makePreparedQuery(conn)
           fact(query,idResult)
           
         }
       }else{
         print('Pas autoriser a executer cette requete !')
-        q()
+        
       }
     }else{
       print('User non valide !')
-      q()
+      
     }
   }else{
     print('Merci de vous reconnecter !')
-    q()
+    
   }
 }
 
 
 #' visitCollection
 #' 
-#' A partir du numero du resultat de la requete d'i2b2, cette fonction renvoie la liste des visites correspondant.                           
+#' A partir du numero du resultat de la requete d'i2b2, cette fonction renvoie la liste des encounters correspondant.                           
 #'                                                                        
 #' @param idResult Numero du resultat
 #' @param idProject Identifiant du projet
 #' @param idSession Identifiant de la session
-#' @param connexionFile le chemin du fichier de connexion
+#' @param directoryConfig le chemin du fichier de connexion
 #' @return La liste  des sejours correspondant
-#' @export
+#' 
 #'
-visitCollection <- function(idResult, idProject, idSession,connexionFile){
-  #dbConnexion
-  conn <- dbConnexion(connexionFile)
-  
-  if(activeSession(conn,idProject, idSession,idResult) == TRUE){
-    print('Session active !')
-    if(actifUser(conn, idSession) == TRUE){
-      print('User actif')
-      if(verifQueryOwner(conn, idSession, idProject, idResult) == TRUE){
-        if(identical(nameQuizTable(conn, idResult,exportTable),"qt_patient_enc_collection") == TRUE){
-          query <- sprintf("SELECT DISTINCT %s
+visitCollection <- function(idResult, idProject, idSession,directoryConfig, idUser){
+  if(activeSession(conn,idProject, idSession,idResult,idUser) == TRUE){
+    if(actifUser(conn, idSession, idUser) == TRUE){
+      if(verifQueryOwner(conn, idSession, idProject, idResult, idUser) == TRUE){
+          enc_cols <- buildColumnEncounter(conn,idProject,idSession,getColumnFile(directoryConfig,"encounterColumn.csv"))
+          i2b2DataSchema <- getValueFromConfFile(file.path(directoryConfig,"connectionFile.cfg"),"i2b2DataSchema")
+          set_table <- getSetTableFromIdResult(conn, idResult, getColumnFile(directoryConfig,"exportTable.csv"))
+        if(identical(set_table,"qt_patient_enc_collection") == TRUE){
+          query <- sprintf("SELECT  %s
                            FROM %s.%s v, %s.%s c
                            WHERE c.result_instance_id = ($1::numeric)
                            AND v.patient_num = c.patient_num
                            AND v.encounter_num = c.encounter_num",
-                           buildColonneVisite(conn,idProject,idSession,colonneVisite),
-                           "i2b2data_multi_nomi",
+                           enc_cols,
+                           i2b2DataSchema,
                            "visit_dimension",
-                           "i2b2data_multi_nomi",
-                           nameQuizTable(conn, idResult, exportTable))
+                           i2b2DataSchema,
+                           set_table)
           
-          visite <- makePreparedQuery(conn)
-          visite(query,idResult)
+          encounter <- makePreparedQuery(conn)
+          encounter(query,idResult)
           
-        }else if(identical(nameQuizTable(conn, idResult,exportTable),"qt_patient_set_collection") == TRUE){
-          query <- sprintf("SELECT DISTINCT %s
+        }else if(identical(set_table,"qt_patient_set_collection") == TRUE){
+          query <- sprintf("SELECT  %s
                            FROM %s.%s v, %s.%s c
                            WHERE c.result_instance_id = ($1::numeric)
                            AND v.patient_num = c.patient_num",
-                           buildColonneVisite(conn,idProject,idSession,colonneVisite),
-                           "i2b2data_multi_nomi",
+                           enc_cols,
+                           i2b2DataSchema,
                            "visit_dimension",
-                           "i2b2data_multi_nomi",
-                           nameQuizTable(conn, idResult, exportTable))
+                           i2b2DataSchema,
+                           set_table)
           
-          visite <- makePreparedQuery(conn)
-          visite(query,idResult)
+          encounter <- makePreparedQuery(conn)
+          encounter(query,idResult)
           
         }
       }else{
         print('Pas autoriser a executer cette requete !')
-        q()
+        
       }
     }else{
       print('User non valide !')
-      q()
+      
     }
   }else{
     print('Merci de vous reconnecter !')
-    q()
+    
   }
 }
 
@@ -672,65 +627,43 @@ visitCollection <- function(idResult, idProject, idSession,connexionFile){
 #' @param idResult Numero du resultat
 #' @param idProject Identifiant du projet
 #' @param idSession Identifiant de la session
-#' @param connexionFile le chemin du fichier de connexion
+#' @param directoryConfig le chemin du fichier de connexion
 #' @return La liste des sejours correspondant
-#' @export
+#' 
 #'
-patientCollection <- function(idResult, idProject, idSession,connexionFile){
-  #dbConnexion
-  
-  if(activeSession(conn,idProject, idSession,idResult) == TRUE){
-    print('Session active !')
-    if(actifUser(conn, idSession) == TRUE){
-      print('User actif')
-      if(verifQueryOwner(conn, idSession, idProject, idResult) == TRUE){
-        if(identical(nameQuizTable(conn,idResult,exportTable),"qt_patient_enc_collection") == TRUE){
-          query <- sprintf("SELECT DISTINCT %s
+patientCollection <- function(idResult, idProject, idSession, directoryConfig, idUser){
+  if(activeSession(conn,idProject, idSession,idResult, idUser) == TRUE){
+    if(actifUser(conn, idSession, idUser) == TRUE){
+      if(verifQueryOwner(conn, idSession, idProject, idResult, idUser) == TRUE){
+            set_table <- getSetTableFromIdResult(conn,idResult, getColumnFile(directoryConfig,"exportTable.csv"))
+            i2b2DataSchema <- getValueFromConfFile(file.path(directoryConfig,"connectionFile.cfg"),"i2b2DataSchema")
+            patient_cols <- buildColumnPatient(conn,idProject,idSession,getColumnFile(directoryConfig,"patientColumn.csv"))
+          query <- sprintf("SELECT  %s
                            FROM %s.%s p, %s.%s c
                            WHERE c.result_instance_id = ($1::numeric)
                            AND p.patient_num = c.patient_num",
-                           buildColonnePatient(conn,idProject,idSession,colonnePatient),
-                           "i2b2data_multi_nomi",
+                           patient_cols,
+                           i2b2DataSchema,
                            "patient_dimension",
-                           "i2b2data_multi_nomi",
-                           nameQuizTable(conn,idResult, exportTable))
-          
+                           i2b2DataSchema,
+                           set_table)
           patient <- makePreparedQuery(conn)
           patient(query,idResult)
           
-        }else if(identical(nameQuizTable(conn,idResult,exportTable),"qt_patient_set_collection") == TRUE){
-          query <- sprintf("SELECT DISTINCT %s
-                           FROM %s.%s p, %s.%s c
-                           WHERE c.result_instance_id = ($1::numeric)
-                           AND p.patient_num = c.patient_num",
-                           buildColonnePatient(conn,idProject,idSession,colonnePatient),
-                           "i2b2data_multi_nomi",
-                           "patient_dimension",
-                           "i2b2data_multi_nomi",
-                           nameQuizTable(conn,idResult, exportTable))
-          
-          patient <- makePreparedQuery(conn)
-          patient(query,idResult)
-          
-        }
-      }else{
+              }else{
         print('Pas proprietaire de la requete !')
-        q()
       }
     }else{
       print('User non valide !')
-      q()
     }
   }else{
     print('Merci de vous reconnecter !')
-    q()
   }
   
 }
 
 
-
-#' getDataTable
+#' exportData
 #' 
 #' Creation des datatables en fonction du type de donnees a exporter et insertion dans la table de tracage des informations concernant le telechargement.
 #' Cette fonction cree des fichiers selon chaque type de donnees a exporter.
@@ -739,47 +672,65 @@ patientCollection <- function(idResult, idProject, idSession,connexionFile){
 #' @param idProject Identifiant du projet
 #' @param idSession IdSession Identifiant de la session
 #' @param researchGoal But de l'etude
-#' @param exportData Le type de donnees a exporter (1: Patients, 2: patients et faits, 3: patients, faits, et visites)
-#' @param connexionFile le chemin du fichier de connexion
+#' @param exportData Le type de donnees a exporter (1: Patients, 2: patients et facts, 3: patients, facts, et encounters)
+#' @param directoryConfig le chemin du fichier de connexion
+#' 
+#'
+#'
+exportData <- function(data,file){
+write.table(data, file, sep=";", quote=T, na="", fileEncoding="latin1", col.names=T, row.names=F)
+}
+
+#' downloadAsCsv
+#' 
+#' Creation des datatables en fonction du type de donnees a exporter et insertion dans la table de tracage des informations concernant le telechargement.
+#' Cette fonction cree des fichiers selon chaque type de donnees a exporter.
+#' 
+#' @param idResult Numero du resultat
+#' @param idProject Identifiant du projet
+#' @param idSession IdSession Identifiant de la session
+#' @param researchGoal But de l'etude
+#' @param exportData Le type de donnees a exporter (1: Patients, 2: patients et facts, 3: patients, facts, et encounters)
+#' @param directoryConfig le chemin du fichier de connexion
 #' 
 #' @export
 #'
-getDataTable <- function(idResult,idProject,idSession,researchGoal,exportData,connexionFile){
+downloadAsCsv <- function(idUser, idResult, idProject, idSession, researchGoal, exportData, directoryConfig){
   out <- tryCatch({
-    conn <<- dbConnexion(connexionFile)
+    conn <<- dbConnexion(directoryConfig)
     
     if(exportData == 1){
-      patient <- patientCollection(idResult,idProject,idSession,connexionFile)
-      
-      write.csv2(patient, file = "patientCollection.csv")
+      patient <- patientCollection(idResult,idProject,idSession,directoryConfig,idUser)
+      exportData(patient, file = "patient.csv")
       
     }else if(exportData == 2){
-      patient <- patientCollection(idResult,idProject,idSession,connexionFile)
-      fait <- factCollection(idResult,idProject,idSession,connexionFile)
+      patient <- patientCollection(idResult,idProject,idSession,directoryConfig,idUser)
+      encounter <- visitCollection(idResult,idProject,idSession,directoryConfig,idUser)
       
-      write.csv2(patient, file = "patientCollection.csv")
-      write.csv2(fait, file = "observationfactCollection.csv")
+      exportData(patient, file = "patient.csv")
+      exportData(encounter, file = "encounter.csv")
       
     }else if(exportData == 3){
-      patient <- patientCollection(idResult,idProject,idSession,connexionFile)
-      fait <- factCollection(idResult,idProject,idSession,connexionFile)
-      visite <- visitCollection(idResult,idProject,idSession,connexionFile)
+      patient <- patientCollection(idResult,idProject,idSession,directoryConfig,idUser)
+      fact <- factCollection(idResult,idProject,idSession,directoryConfig,idUser)
+      encounter <- visitCollection(idResult,idProject,idSession,directoryConfig,idUser)
       
-      write.csv2(patient, file = "patientCollection.csv")
-      write.csv2(fait, file = "observationfactCollection.csv")
-      write.csv2(visite, file = "visitCollection.csv")
+      exportData(patient, file = "patient.csv")
+      exportData(encounter, file = "encounter.csv")
+      exportData(fact, file = "observation.csv")
       
     }
   },error = function(err){
     print(err)
-    q()
+    
   }, finally={
     query <- sprintf("INSERT INTO i2b2pm.pm_rplugin 
                      (user_id,session_id,project_id,query_instance_id,result_instance_id,user_role_cd,rplugin_action,rplugin_status,rplugin_research_goal,rplugin_date,rplugin_export_type)
-                     VALUES ('%s','%s','%s',%d, %d,'%s','%s','ok','%s',(SELECT CURRENT_TIMESTAMP),'%s')",getIdUser(conn,idSession),idSession,idProject,getIdQuery(conn,idResult),idResult,getRoleUser(conn,idProject,idSession),getAction(),researchGoal,paste0("_",exportData,"_",collapse =""))
+                     VALUES ('%s','%s','%s',%d, %d,'%s','%s','ok','%s',Now(),'%s')",idUser,idSession,idProject,getIdQuery(conn,idResult),idResult,paste0(getRole(conn,idProject,idSession),collapse=";"),getAction(),researchGoal,exportData)
     
-    send <- dbSendQuery(conn, query)
-    res <- dbFetch(send, n = -1)
-    # dbDisconnect(conn)
+    send <- RPostgres::dbSendQuery(conn, query)
+    res <- RPostgres::dbFetch(send)
+    RPostgres::dbClearResult(send)
+    dbDisconnection(conn)
   })
 }

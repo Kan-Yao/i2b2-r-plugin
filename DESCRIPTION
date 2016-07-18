@@ -1,13 +1,15 @@
-Package: i2b2ExportData
+Package: i2b2rplugin
 Version: 0.1
 Date: 2016-06-16
-Title: Exportation de données
-Author: Kan YAO, Nicolas Paris
-Description: Permet de télécharger des donnees depuis le requêteur i2b2
-Maintainer: Kan YAO <kan-yao@outlook.com>
+Title: i2b2 database management 
+Authors@R: c(
+    person("Nicolas", "Paris", email = "nicolas.paris@aphp.fr", role = "cre"),
+    person("Kan", "Yao", email = "kan-yao@outlook.com", role = "aut"))
+Description:  connecting, security, extracting, vizualisation
 License: GPL (>= 2)
 Depends:
-    R (>= 3.0.1)
+    R (>= 3.0.1), RPostgres
+Imports: RPostgres
 Encoding: UTF-8
 LazyData: TRUE
 RoxygenNote: 5.0.1
